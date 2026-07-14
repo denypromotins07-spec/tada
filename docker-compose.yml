@@ -1,0 +1,160 @@
+version: '3.8'
+
+services:
+  # QuestDB - Time-series database for tick data (4GB limit)
+  questdb:
+    image: questdb/questdb:latest
+    container_name: hft_questdb
+    restart: unless-stopped
+    mem_limit: 4g
+    memswap_limit: 4g
+    environment:
+      - QDB_OSI_DUMP_MEMORY=true
+      - QDB_CAIRO_SQL_COPY_POOL_CAPACITY=64
+      - QDB_CAIRO_SQL_PAGE_FRAME_CAPACITY=64M
+      - QDB_CAIRO_SQL_WRITER_CMD_QUEUE_CAPACITY=2048
+      - QDB_CAIRO_SQL_WRITER_COMMAND_CONCURRENTITY=16
+    ports:
+      - "9000:9000"  # PostgreSQL wire protocol
+      - "9009:9009"  # InfluxDB Line Protocol
+      - "9003:9003"  # Web console
+    volumes:
+      - ./infra/questdb.conf:/root/.questdb/questdb.conf:ro
+      - questdb_data:/var/lib/questdb
+    networks:
+      - hft_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/status"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  # Redis - Sub-millisecond pub/sub state sync (1GB limit)
+  redis:
+    image: redis:7-alpine
+    container_name: hft_redis
+    restart: unless-stopped
+    mem_limit: 1g
+    memswap_limit: 1g
+    command: redis-server /usr/local/etc/redis/redis.conf
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./infra/redis.conf:/usr/local/etc/redis/redis.conf:ro
+    networks:
+      - hft_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+
+  # Rust Core - Microsecond execution engine (2GB limit)
+  rust_core:
+    build:
+      context: ./core
+      dockerfile: Dockerfile
+    container_name: hft_rust_core
+    restart: unless-stopped
+    mem_limit: 2g
+    memswap_limit: 2g
+    environment:
+      - RUST_LOG=info
+      - BINANCE_WS_URL=wss://stream.binance.com:9443/ws
+      - REDIS_URL=redis://redis:6379
+      - CPU_AFFINITY=0-3  # Pin to first 4 AMD cores
+      - RT_PRIORITY=99    # Real-time priority
+    depends_on:
+      redis:
+        condition: service_healthy
+      questdb:
+        condition: service_healthy
+    networks:
+      - hft_network
+    cap_add:
+      - IPC_LOCK  # Lock memory pages to prevent swapping
+      - NET_BIND_SERVICE
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+
+  # Ray Cluster - Distributed strategy engine (6GB limit)
+  ray_head:
+    build:
+      context: ./strategies
+      dockerfile: Dockerfile
+    container_name: hft_ray_head
+    restart: unless-stopped
+    mem_limit: 4g
+    memswap_limit: 4g
+    environment:
+      - RAY_DISABLE_DOCKER_CPU_WARNING=1
+      - ONNXRUNTIME_PROVIDERS=rocm  # AMD Radeon GPU acceleration
+      - OPENBLAS_NUM_THREADS=2
+      - MKL_NUM_THREADS=2
+    ports:
+      - "8265:8265"  # Ray dashboard
+      - "10001:10001"  # Ray client
+    command: ray start --head --port=6379 --dashboard-host=0.0.0.0 --include-dashboard=true
+    volumes:
+      - ./strategies:/app
+    networks:
+      - hft_network
+    depends_on:
+      - redis
+      - questdb
+
+  ray_worker:
+    build:
+      context: ./strategies
+      dockerfile: Dockerfile
+    container_name: hft_ray_worker
+    restart: unless-stopped
+    mem_limit: 2g
+    memswap_limit: 2g
+    environment:
+      - ONNXRUNTIME_PROVIDERS=rocm
+      - OPENBLAS_NUM_THREADS=2
+      - MKL_NUM_THREADS=2
+    command: ray start --address=ray_head:6379 --num-cpus=4
+    volumes:
+      - ./strategies:/app
+    networks:
+      - hft_network
+    depends_on:
+      - ray_head
+
+  # Next.js Frontend - Real-time dashboard (1GB limit)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: hft_frontend
+    restart: unless-stopped
+    mem_limit: 1g
+    memswap_limit: 1g
+    environment:
+      - NODE_ENV=production
+      - REDIS_URL=redis://redis:6379
+      - WS_URL=ws://redis:6379
+    ports:
+      - "3000:3000"
+    depends_on:
+      - redis
+    networks:
+      - hft_network
+
+networks:
+  hft_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
+
+volumes:
+  questdb_data:
+    driver: local
