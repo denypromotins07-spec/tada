@@ -1,0 +1,68 @@
+# Agent Orchestrator Dependencies
+# AI/ML and orchestration dependencies for the 20 autonomous agents
+
+# ===========================================
+# Core ML & AI Libraries
+# ===========================================
+numpy==1.26.2
+pandas==2.1.4
+pyarrow==14.0.2
+scipy==1.11.4
+scikit-learn==1.3.2
+
+# ONNX Runtime with DirectML for AMD GPU/NPU acceleration
+onnxruntime==1.16.3
+onnxruntime-directml==1.16.3
+onnx==1.15.0
+
+# ===========================================
+# Distributed Computing (Ray)
+# ===========================================
+ray==2.8.1
+ray[default]==2.8.1
+
+# ===========================================
+# Deep Learning (Optional - for training)
+# ===========================================
+torch==2.1.2
+torchvision==0.16.2
+
+# ===========================================
+# Inter-Process Communication
+# ===========================================
+pyzmq==25.1.2
+msgpack==1.0.7
+redis==5.0.1
+
+# ===========================================
+# Data Processing
+# ===========================================
+polars==0.20.3
+dask==2023.12.1
+dask[dataframe]==2023.12.1
+
+# ===========================================
+# Technical Analysis
+# ===========================================
+ta-lib==0.4.28
+pandas-ta==0.3.14b
+
+# ===========================================
+# Visualization (for analytics)
+# ===========================================
+matplotlib==3.8.2
+plotly==5.18.0
+
+# ===========================================
+# Utilities
+# ===========================================
+python-dotenv==1.0.0
+pyyaml==6.0.1
+loguru==0.7.2
+psutil==5.9.7
+
+# ===========================================
+# Testing
+# ===========================================
+pytest==7.4.3
+pytest-asyncio==0.23.2
