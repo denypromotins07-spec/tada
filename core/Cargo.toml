@@ -1,0 +1,190 @@
+# =============================================================================
+# HFT Rust Core - Cargo.toml
+# =============================================================================
+# Ultra-low-latency execution engine for cryptocurrency trading
+# Optimized for AMD Ryzen AI 5 with microsecond-level performance
+# =============================================================================
+
+[package]
+name = "hft_core"
+version = "0.1.0"
+edition = "2021"
+authors = ["HFT Quant Team"]
+description = "Microsecond-latency crypto trading execution core"
+license = "MIT"
+readme = "../README.md"
+repository = "https://github.com/yourusername/hft-quant-trading"
+keywords = ["hft", "trading", "crypto", "low-latency", "binance"]
+categories = ["finance", "network-programming"]
+
+# =============================================================================
+# BUILD PROFILE OPTIMIZATIONS
+# =============================================================================
+# Release profile is heavily optimized for production latency
+[profile.release]
+opt-level = 3                    # Maximum optimization
+lto = "fat"                      # Link-time optimization for cross-crate inlining
+codegen-units = 1                # Single codegen unit for better optimization
+panic = "abort"                  # Abort on panic (no unwinding, smaller binary)
+strip = true                     # Strip debug symbols
+rpath = false                    # Disable rpath
+debug = false                    # No debug info
+debug-assertions = false         # Disable debug assertions
+overflow-checks = false          # Disable overflow checks (faster arithmetic)
+incremental = false              # Disable incremental compilation
+
+# Dev profile for development with some optimizations
+[profile.dev]
+opt-level = 1                    # Some optimization even in dev
+debug = true                     # Debug info for debugging
+panic = "unwind"                 # Unwind on panic in dev
+
+# Custom benchmarking profile
+[profile.bench]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+
+# =============================================================================
+# DEPENDENCIES
+# =============================================================================
+
+[dependencies]
+# -----------------------------------------------------------------------------
+# ASYNC RUNTIME - Tokio with real-time features
+# -----------------------------------------------------------------------------
+tokio = { version = "1.35", features = [
+    "full",                          # All tokio features
+    "rt-multi-thread",               # Multi-threaded runtime
+    "macros",                        # Async macros
+    "net",                           # Network primitives
+    "time",                          # Time utilities
+    "sync",                          # Synchronization primitives
+    "signal",                        # Signal handling
+    "parking_lot",                   # Better parking lot implementation
+] }
+
+# -----------------------------------------------------------------------------
+# TLS/NETWORKING - Secure WebSocket connections
+# -----------------------------------------------------------------------------
+tokio-tungstenite = { version = "0.20", features = [
+    "native-tls",                    # Native TLS backend
+    "connect",                       # Client connections
+] }
+native-tls = "0.2"                   # Platform-native TLS
+tokio-rustls = { version = "0.24", optional = true }  # Alternative: rustls
+rustls = { version = "0.21", optional = true, features = [
+    "ring",                          # Hardware-accelerated crypto
+] }
+
+# -----------------------------------------------------------------------------
+# SERIALIZATION - Fast binary and JSON serialization
+# -----------------------------------------------------------------------------
+serde = { version = "1.0", features = ["derive"] }     # Serialization framework
+serde_json = "1.0"                                      # JSON support
+bincode = "1.3"                                         # Binary serialization (faster than JSON)
+bytes = { version = "1.5", features = ["serde"] }      # Byte buffer utilities
+
+# -----------------------------------------------------------------------------
+# LOCK-FREE DATA STRUCTURES - For concurrent access without GIL-like locks
+# -----------------------------------------------------------------------------
+crossbeam = "0.8"                                       # Concurrent data structures
+crossbeam-channel = "0.5"                               # MPSC channels
+dashmap = "5.5"                                         # Concurrent hash map
+parking_lot = "0.12"                                    # Faster mutexes and rwlocks
+
+# -----------------------------------------------------------------------------
+# HTTP CLIENT - For REST API calls to exchanges
+# -----------------------------------------------------------------------------
+reqwest = { version = "0.11", features = [
+    "json",                          # JSON support
+    "gzip",                          # Response compression
+    "rustls-tls",                    # Use rustls for HTTPS
+] }
+
+# -----------------------------------------------------------------------------
+# LOGGING & TRACING
+# -----------------------------------------------------------------------------
+tracing = "0.1"                                       # Structured logging
+tracing-subscriber = { version = "0.3", features = [
+    "env-filter",                      # Dynamic log filtering
+    "json",                            # JSON log format
+] }
+log = "0.4"                                       # Facade for logging
+
+# -----------------------------------------------------------------------------
+# ERROR HANDLING
+# -----------------------------------------------------------------------------
+anyhow = { version = "1.0", features = ["backtrace"] }  # Application errors
+thiserror = "1.0"                                       # Library errors
+
+# -----------------------------------------------------------------------------
+# TIME UTILITIES
+# -----------------------------------------------------------------------------
+chrono = { version = "0.4", features = ["serde"] }       # Date/time handling
+instant = "0.1"                                          # High-resolution timer
+
+# -----------------------------------------------------------------------------
+# MEMORY MANAGEMENT
+# -----------------------------------------------------------------------------
+tikv-jemallocator = "0.5"                                # Jemalloc for better memory perf
+
+# -----------------------------------------------------------------------------
+# CPU PINNING & REAL-TIME (Linux-specific)
+# -----------------------------------------------------------------------------
+[target.'cfg(target_os = "linux")'.dependencies]
+libc = "0.2"                                             # For CPU affinity
+nix = { version = "0.27", features = [
+    "sched",                           # CPU scheduling
+    "resource",                        # Resource limits
+] }
+
+# -----------------------------------------------------------------------------
+# METRICS & MONITORING
+# -----------------------------------------------------------------------------
+prometheus = "0.13"                                      # Prometheus metrics
+
+# -----------------------------------------------------------------------------
+# MATH & STATISTICS
+# -----------------------------------------------------------------------------
+rand = "0.8"                                             # Random number generation
+rand_distr = "0.4"                                       # Random distributions
+
+# =============================================================================
+# FEATURE FLAGS
+# =============================================================================
+
+[features]
+default = ["production"]
+production = []              # Production optimizations
+development = []             # Development features
+benchmark = []               # Benchmarking mode
+# Use rustls instead of native-tls
+use-rustls = ["tokio-rustls", "rustls", "reqwest/rustls-tls"]
+
+# =============================================================================
+# BENCHMARKS
+# =============================================================================
+
+[[bench]]
+name = "order_book_benchmark"
+harness = false
+
+# =============================================================================
+# EXAMPLES
+# =============================================================================
+
+[[example]]
+name = "simple_trader"
+path = "examples/simple_trader.rs"
+
+# =============================================================================
+# PACKAGE METADATA
+# =============================================================================
+
+[package.metadata.docs.rs]
+all-features = true
+targets = ["x86_64-unknown-linux-gnu"]
+
+[badges]
+maintenance = { status = "actively-developed" }
