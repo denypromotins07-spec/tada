@@ -72,6 +72,8 @@ rmpv = "1.0"
 # Atomic operations and synchronization
 parking_lot = "0.12"
 dashmap = "5.5"
+rustc-hash = "1.1"
+futures-executor = "0.3"
 
 # Network utilities
 bytes = "1.5"
