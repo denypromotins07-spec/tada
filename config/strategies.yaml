@@ -1,0 +1,246 @@
+# QuantumHFT Strategy Configuration
+# Toggle AI agent weights and strategy parameters without recompiling
+
+# ===========================================
+# Global Trading Parameters
+# ===========================================
+trading:
+  enabled: true
+  paper_trading: true  # Set to false for live trading
+  max_position_size_usd: 10000
+  max_daily_loss_usd: 500
+  default_leverage: 1.0
+  allowed_symbols:
+    - BTCUSDT
+    - ETHUSDT
+    - SOLUSDT
+    - BNBUSDT
+
+# ===========================================
+# Risk Management Settings
+# ===========================================
+risk:
+  max_portfolio_risk: 0.02  # 2% of portfolio per trade
+  stop_loss_default: 0.02   # 2% default stop loss
+  take_profit_default: 0.04 # 4% default take profit
+  max_drawdown_threshold: 0.10  # Circuit breaker at 10% drawdown
+  correlation_threshold: 0.8    # Max correlation between positions
+  var_confidence: 0.95          # Value at Risk confidence level
+
+# ===========================================
+# Agent Weights & Configuration
+# Each agent's signal weight in the ensemble
+# ===========================================
+agents:
+  market_data:
+    enabled: true
+    weight: 1.0
+    config:
+      symbols: ["BTCUSDT", "ETHUSDT"]
+      update_interval_ms: 100
+
+  technical_analysis:
+    enabled: true
+    weight: 0.8
+    config:
+      indicators:
+        - rsi
+        - macd
+        - bollinger_bands
+        - ema_cross
+      timeframes: ["1m", "5m", "15m", "1h"]
+      rsi_oversold: 30
+      rsi_overbought: 70
+
+  quantitative_research:
+    enabled: true
+    weight: 0.7
+    config:
+      mean_reversion_threshold: 2.0  # Standard deviations
+      cointegration_lookback: 100
+      factor_models: ["momentum", "value", "volatility"]
+
+  order_flow:
+    enabled: true
+    weight: 0.9
+    config:
+      imbalance_threshold: 0.7
+      delta_divergence_enabled: true
+      footprint_analysis: true
+
+  on_chain_intelligence:
+    enabled: false  # Requires external API
+    weight: 0.5
+    config:
+      whale_threshold_usd: 100000
+      exchange_flow_alerts: true
+
+  macro_research:
+    enabled: false
+    weight: 0.4
+    config:
+      dxy_correlation: true
+      yield_curve_monitoring: false
+
+  news_sentiment:
+    enabled: false  # Requires external API
+    weight: 0.6
+    config:
+      sources: ["twitter", "reddit", "news_api"]
+      sentiment_threshold: 0.5
+
+  risk_management:
+    enabled: true
+    weight: 1.0  # Always fully weighted - acts as gatekeeper
+    config:
+      hard_stop_enabled: true
+      position_sizing_method: "kelly_criterion"
+      kelly_fraction: 0.25  # Quarter Kelly for safety
+
+  portfolio_management:
+    enabled: true
+    weight: 0.8
+    config:
+      rebalance_threshold: 0.1  # Rebalance when drift > 10%
+      target_allocation:
+        BTC: 0.4
+        ETH: 0.3
+        SOL: 0.2
+        BNB: 0.1
+
+  strategy_selection:
+    enabled: true
+    weight: 0.9
+    config:
+      regime_detection: true
+      meta_labeling: true
+      lookback_period: 100
+
+  execution:
+    enabled: true
+    weight: 1.0
+    config:
+      algorithm: "twap"  # twap, vwap, iceberg
+      participation_rate: 0.1  # 10% of volume
+      urgency: "normal"  # low, normal, high
+
+  arbitrage:
+    enabled: false  # Requires multiple exchange connections
+    weight: 0.6
+    config:
+      min_spread_threshold: 0.001  # 0.1%
+      exchanges: ["binance", "coinbase", "kraken"]
+
+  market_making:
+    enabled: false
+    weight: 0.5
+    config:
+      spread_bps: 10  # 0.1% spread
+      inventory_skew: true
+      max_inventory: 1.0
+
+  reinforcement_learning:
+    enabled: false  # Requires trained model
+    weight: 0.7
+    config:
+      model_path: "./models/rl_policy.onnx"
+      exploration_rate: 0.1
+
+  backtesting:
+    enabled: true
+    weight: 0.0  # No live trading impact
+    config:
+      lookback_days: 30
+      walk_forward: true
+
+  paper_trading:
+    enabled: true
+    weight: 0.0  # No live trading impact
+    config:
+      simulate_latency_ms: 50
+      simulate_slippage_bps: 5
+
+  performance_analytics:
+    enabled: true
+    weight: 0.0  # Monitoring only
+    config:
+      metrics: ["sharpe", "sortino", "max_drawdown", "win_rate"]
+      report_interval: "daily"
+
+  model_training:
+    enabled: false  # Run separately
+    weight: 0.0
+    config:
+      retrain_frequency: "weekly"
+      validation_split: 0.2
+
+  compliance_safety:
+    enabled: true
+    weight: 1.0  # Always active - circuit breaker
+    config:
+      kill_switch_enabled: true
+      audit_logging: true
+      position_limits_enforced: true
+
+  supervisor:
+    enabled: true
+    weight: 1.0  # Coordination role
+    config:
+      conflict_resolution: "weighted_voting"
+      min_consensus: 0.6
+      health_check_interval_ms: 1000
+
+# ===========================================
+# Strategy Ensemble Configuration
+# How signals are combined
+# ===========================================
+ensemble:
+  method: "weighted_voting"  # weighted_voting, stacking, majority_vote
+  min_confidence: 0.6  # Minimum confidence to act
+  veto_agents:  # These agents can veto any trade
+    - risk_management
+    - compliance_safety
+  signal_decay_seconds: 60  # Signals expire after 60 seconds
+
+# ===========================================
+# Execution Algorithms
+# ===========================================
+execution_algos:
+  twap:
+    duration_minutes: 30
+    slice_count: 60
+    randomize_timing: true
+    
+  vwap:
+    lookback_days: 30
+    participation_rate: 0.1
+    
+  iceberg:
+    visible_percentage: 0.1  # Show 10% of total order
+    refresh_delay_ms: 100
+
+# ===========================================
+# Performance Targets
+# ===========================================
+targets:
+  daily_return_target: 0.01  # 1% daily
+  sharpe_ratio_target: 2.0
+  win_rate_target: 0.55
+  profit_factor_target: 1.5
+  max_drawdown_limit: 0.10
+
+# ===========================================
+# Notifications & Alerts
+# ===========================================
+notifications:
+  email_enabled: false
+  telegram_enabled: false
+  discord_webhook: ""
+  
+  alerts:
+    - type: "large_loss"
+      threshold_usd: 100
+    - type: "circuit_breaker"
+      trigger: "drawdown_exceeded"
+    - type: "system_health"
+      trigger: "latency_spike"

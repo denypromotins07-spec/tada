@@ -1,0 +1,118 @@
+[package]
+name = "quantumhft-engine"
+version = "0.1.0"
+edition = "2021"
+authors = ["QuantumHFT Team"]
+description = "Ultra-low latency HFT execution engine for crypto trading"
+license = "MIT"
+
+# ===========================================
+# Performance Optimization Profile
+# ===========================================
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+panic = "abort"
+strip = true
+
+[profile.dev]
+opt-level = 0
+debug = true
+
+[profile.bench]
+opt-level = 3
+lto = "fat"
+
+# ===========================================
+# Dependencies
+# ===========================================
+[dependencies]
+
+# Async Runtime - Tokio multi-threaded
+tokio = { version = "1.35", features = ["full", "rt-multi-thread", "sync", "time", "macros"] }
+
+# High-performance JSON parsing (zero-allocation)
+simd-json = "0.13"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Precise decimal arithmetic for financial calculations
+rust_decimal = { version = "1.33", features = ["serde", "tokio-pg"] }
+rust_decimal_macros = "1.33"
+
+# WebSocket client for Binance
+tokio-tungstenite = { version = "0.21", features = ["native-tls"] }
+futures-util = "0.3"
+futures = "0.3"
+
+# Lock-free channels for IPC
+crossbeam = "0.8"
+crossbeam-channel = "0.5"
+
+# Memory allocator (fragmentation-free for HFT)
+mimalloc = { version = "0.1", default-features = false, features = ["local_dynamic_tls"] }
+
+# Logging and tracing
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+log = "0.4"
+
+# Error handling
+thiserror = "1.0"
+anyhow = "1.0"
+
+# Time handling
+chrono = { version = "0.4", features = ["serde"] }
+
+# MessagePack for IPC serialization
+rmp-serde = "1.1"
+rmpv = "1.0"
+
+# Atomic operations and synchronization
+parking_lot = "0.12"
+dashmap = "5.5"
+rustc-hash = "1.1"
+futures-executor = "0.3"
+
+# Network utilities
+bytes = "1.5"
+tokio-util = { version = "0.7", features = ["codec"] }
+
+# Configuration
+config = "0.14"
+
+# Metrics
+metrics = "0.22"
+metrics-exporter-prometheus = "0.13"
+
+# ===========================================
+# Build Dependencies
+# ===========================================
+[build-dependencies]
+cc = "1.0"
+
+# ===========================================
+# Dev Dependencies
+# ===========================================
+[dev-dependencies]
+criterion = { version = "0.5", features = ["html_reports"] }
+proptest = "1.4"
+mockall = "0.12"
+
+[[bench]]
+name = "order_matching_bench"
+harness = false
+
+[[bench]]
+name = "websocket_parse_bench"
+harness = false
+
+# ===========================================
+# Features
+# ===========================================
+[features]
+default = ["production"]
+production = ["mimalloc"]
+development = []
+benchmark = []
